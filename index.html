@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 World Cup Pool</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=EB+Garamond:wght@400;500&family=Libre+Baskerville:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--navy:#00205B;--navy-light:#003080;--navy-dark:#001540;--silver:#B9CBD3;--silver-light:#d4e4ec;--cream:#f0f4f8;--cream-dark:#dce6ef;--white:#f8fafc;--text-dark:#1a1a1a;--text-mid:#3d3d3d;--red:#c0392b;--gold:#c9a84c;--green-ok:#1d8a4c;--blue:#0053FF;--shadow:0 4px 24px rgba(0,0,0,0.18);}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'EB Garamond',serif;background:#001540;color:#f0f4f8;min-height:100vh;}
+  #setup-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:30px 20px;text-align:center;}
+  #setup-screen h1{font-family:'Playfair Display',serif;color:#fff;font-size:clamp(1.8rem,5vw,3rem);margin-bottom:8px;}
+  #setup-screen>p{color:var(--cream-dark);font-size:1rem;margin-bottom:24px;font-style:italic;}
+  .setup-card{background:var(--cream);color:var(--text-dark);border-radius:6px;padding:28px;max-width:480px;width:100%;border-top:3px solid var(--blue);box-shadow:var(--shadow);text-align:left;}
+  .setup-card h2{font-family:'Playfair Display',serif;color:var(--navy);font-size:1.2rem;margin-bottom:6px;}
+  .setup-card>p{font-size:0.88rem;color:#666;margin-bottom:16px;line-height:1.6;}
+  .setup-card label,.modal label{font-size:0.75rem;font-family:'Libre Baskerville',serif;color:var(--navy);letter-spacing:0.1em;text-transform:uppercase;display:block;margin-bottom:4px;margin-top:12px;}
+  .setup-card input{width:100%;padding:9px 12px;border:1px solid #c8bfa8;border-radius:3px;font-family:'EB Garamond',serif;font-size:0.95rem;color:var(--text-dark);background:var(--white);outline:none;}
+  .setup-error{color:var(--red);font-size:0.82rem;margin-top:8px;display:none;}
+  header{background:#001540;border-bottom:2px solid var(--silver);padding:22px 24px 16px;text-align:center;position:relative;overflow:hidden;}
+  header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(0,83,255,0.12) 0%,transparent 70%);pointer-events:none;}
+  header .flag-row{display:flex;justify-content:center;gap:18px;margin-bottom:7px;font-size:20px;}
+  header h1{font-family:'Playfair Display',serif;font-size:clamp(1.7rem,5vw,3rem);color:#fff;letter-spacing:0.03em;line-height:1.1;text-shadow:0 2px 16px rgba(0,0,0,0.5);}
+  header h1 em{font-style:italic;color:var(--silver);}
+  header p.subtitle{font-family:'Libre Baskerville',serif;font-style:italic;color:var(--cream-dark);font-size:0.92rem;margin-top:4px;opacity:0.85;}
+  .cap-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--silver);color:var(--silver);font-size:0.72rem;letter-spacing:0.12em;padding:3px 14px;margin-top:8px;text-transform:uppercase;font-family:'Libre Baskerville',serif;}
+  .sync-bar{background:#00205B;border-bottom:1px solid rgba(185,203,211,0.25);padding:7px 16px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;font-size:0.78rem;color:var(--silver);font-family:'Libre Baskerville',serif;}
+  .live-dot{width:7px;height:7px;background:#4caf50;border-radius:50%;display:inline-block;animation:pulse 1.4s ease-in-out infinite;flex-shrink:0;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.25;}}
+  .lock-banner{background:var(--red);color:#fff;text-align:center;padding:8px 16px;font-family:'Playfair Display',serif;font-size:0.9rem;}
+  .phase-banner{background:#00205B;color:var(--silver);text-align:center;padding:7px 16px;font-family:'Libre Baskerville',serif;font-size:0.82rem;border-bottom:1px solid rgba(185,203,211,0.25);}
+  .tabs{display:flex;background:#00205B;border-bottom:2px solid var(--silver);overflow-x:auto;}
+  .tab-btn{flex:1;min-width:90px;padding:12px 7px;background:none;border:none;color:var(--cream-dark);font-family:'Playfair Display',serif;font-size:0.88rem;cursor:pointer;letter-spacing:0.03em;transition:all 0.2s;border-bottom:3px solid transparent;white-space:nowrap;}
+  .tab-btn:hover{color:var(--silver-light);}.tab-btn.active{color:var(--silver);border-bottom-color:var(--silver);background:rgba(185,203,211,0.1);}
+  main{max-width:1000px;margin:0 auto;padding:20px 14px 60px;}
+  .section{display:none;}.section.active{display:block;}
+  .card{background:var(--cream);color:var(--text-dark);border-radius:4px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow);border-top:3px solid var(--blue);}
+  .card h2{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--navy);margin-bottom:13px;padding-bottom:8px;border-bottom:1px solid var(--cream-dark);}
+  .card h3{font-family:'Playfair Display',serif;font-size:1.02rem;color:var(--navy);margin:14px 0 8px;}
+  .green-header{background:#00205B;color:var(--cream);border-top-color:var(--silver);}.green-header h2{color:var(--silver);border-bottom-color:rgba(185,203,211,0.3);}
+  .info-box{background:#e8eef8;border-left:3px solid var(--blue);padding:9px 13px;border-radius:3px;font-size:0.84rem;color:var(--navy);margin-bottom:14px;line-height:1.5;}
+  .empty-state{text-align:center;padding:32px 20px;color:#aaa;font-style:italic;}
+  .count-badge{display:inline-block;font-size:0.7rem;padding:1px 7px;background:#00205B;color:var(--silver);border-radius:10px;margin-left:6px;vertical-align:middle;}
+  .admin-badge{background:rgba(185,203,211,0.2);border:1px solid var(--silver);color:var(--navy);font-size:0.7rem;padding:2px 8px;border-radius:10px;margin-left:8px;font-family:'Libre Baskerville',serif;letter-spacing:0.08em;text-transform:uppercase;}
+  label{display:block;font-size:0.76rem;font-family:'Libre Baskerville',serif;color:var(--navy);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:4px;}
+  input,select{width:100%;padding:8px 11px;border:1px solid #c8bfa8;border-radius:3px;font-family:'EB Garamond',serif;font-size:1rem;color:var(--text-dark);background:var(--white);outline:none;transition:border-color 0.2s;}
+  input:focus,select:focus{border-color:var(--blue);}
+  .form-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}.form-group{display:flex;flex-direction:column;flex:1;min-width:140px;}
+  .btn{display:inline-block;padding:9px 24px;border:none;border-radius:3px;font-family:'Playfair Display',serif;font-size:0.97rem;cursor:pointer;transition:all 0.2s;letter-spacing:0.04em;}
+  .btn-primary{background:var(--navy);color:#fff;border:1px solid var(--silver);}.btn-primary:hover{background:var(--navy-light);}.btn-primary:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn-secondary{background:transparent;color:var(--navy);border:1px solid var(--navy);font-size:0.82rem;padding:5px 14px;}.btn-secondary:hover{background:rgba(0,32,91,0.07);}
+  .btn-danger{background:transparent;color:var(--red);border:1px solid var(--red);font-size:0.78rem;padding:4px 11px;}.btn-danger:hover{background:rgba(192,57,43,0.08);}
+  /* ── group prediction grid ── */
+  .group-block{background:var(--white);border:1px solid #d8e0ea;border-radius:5px;padding:12px 14px;margin-bottom:10px;border-left:4px solid var(--blue);}
+  .group-title{font-family:'Playfair Display',serif;font-size:1.02rem;color:var(--navy);margin-bottom:9px;display:flex;align-items:center;gap:8px;}
+  .group-grid{display:grid;grid-template-columns:1fr;gap:6px;}
+  .rank-row{display:flex;align-items:center;gap:9px;}
+  .rank-pos{font-family:'Playfair Display',serif;font-weight:700;font-size:0.86rem;color:var(--navy);width:30px;flex-shrink:0;text-align:center;background:#e8eef8;border-radius:3px;padding:5px 0;}
+  .rank-pos.adv{background:#dff0e4;color:var(--green-ok);}
+  .rank-row select{flex:1;font-size:0.93rem;padding:6px 9px;}
+  .groups-wrap{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:10px;}
+  /* ── bracket ── */
+  .bracket-note{font-size:0.8rem;color:#888;font-style:italic;margin-bottom:10px;}
+  .br-round{margin-bottom:18px;}
+  .br-round h3{display:flex;align-items:center;gap:8px;font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--navy);}
+  .br-pts{font-size:0.68rem;font-family:'Libre Baskerville',serif;background:var(--gold);color:#4a3a10;padding:1px 8px;border-radius:10px;letter-spacing:0.05em;white-space:nowrap;}
+  .br-match{display:flex;align-items:center;gap:8px;background:var(--white);border:1px solid #d8e0ea;border-radius:4px;padding:6px 9px;margin-bottom:5px;}
+  .br-match .m-num{font-size:0.7rem;color:#aaa;width:26px;flex-shrink:0;font-family:'Libre Baskerville',serif;}
+  .br-match select{flex:1;font-size:0.9rem;padding:5px 8px;}
+  /* round sub-tabs */
+  .br-tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;padding-bottom:4px;}
+  .br-tab{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 13px;background:var(--white);border:1px solid #c8d4e0;border-radius:4px;font-family:'Playfair Display',serif;font-size:0.85rem;color:var(--navy);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+  .br-tab:hover{border-color:var(--navy);}
+  .br-tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .br-tab-count{font-family:'Libre Baskerville',serif;font-size:0.62rem;opacity:0.7;letter-spacing:0.05em;}
+  /* matchup tie */
+  .br-tie{display:flex;align-items:stretch;gap:8px;background:var(--white);border:1px solid #d8e0ea;border-radius:5px;padding:7px 9px;margin-bottom:7px;}
+  .br-tie.pending{opacity:0.6;}
+  .br-tie-num{display:flex;align-items:center;font-size:0.66rem;color:#aaa;min-width:34px;font-family:'Libre Baskerville',serif;letter-spacing:0.03em;}
+  .br-tie-teams{flex:1;display:flex;flex-direction:column;gap:5px;}
+  .br-team{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;padding:9px 12px;border:1.5px solid #d0d9e4;border-radius:4px;background:var(--white);font-family:'EB Garamond',serif;font-size:0.98rem;color:var(--text-dark);cursor:pointer;transition:all 0.15s;}
+  .br-team:hover:not(:disabled):not(.placeholder){border-color:var(--navy);background:#f0f4fc;}
+  .br-team.picked{border-color:var(--green-ok);background:#e6f5ec;color:#155f37;font-weight:500;}
+  .br-team:disabled{cursor:not-allowed;}
+  .br-team.placeholder{color:#aaa;font-style:italic;cursor:default;border-style:dashed;background:#f7f9fb;}
+  .br-check{color:var(--green-ok);font-weight:700;}
+  /* champion box */
+  .br-champ-box{margin-top:14px;background:#fff8e6;border:1.5px solid var(--gold);border-radius:6px;padding:14px 16px;text-align:center;}
+  .br-champ-label{display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Libre Baskerville',serif;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.12em;color:#8a6d1f;margin-bottom:6px;}
+  .br-champ-name{font-family:'Playfair Display',serif;font-size:1.3rem;color:var(--navy);}
+  .tie-pair{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+  @media(max-width:560px){.tie-pair{grid-template-columns:1fr;}}
+  /* ── leaderboard ── */
+  .lb-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:4px;}
+  .lb-table{width:100%;border-collapse:collapse;font-size:0.82rem;min-width:440px;}
+  .lb-scroll-hint{display:none;font-size:0.7rem;color:#aaa;font-style:italic;text-align:center;margin-bottom:6px;font-family:'Libre Baskerville',serif;letter-spacing:0.04em;}
+  @media(max-width:560px){.lb-scroll-hint{display:block;}}
+  .lb-table th{font-family:'Libre Baskerville',serif;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--navy);padding:6px 6px;text-align:left;border-bottom:2px solid var(--cream-dark);white-space:nowrap;}
+  .lb-table td{padding:7px 6px;border-bottom:1px solid #dce6ef;vertical-align:middle;}.lb-table tr:last-child td{border-bottom:none;}.lb-table tr.rank-1{background:rgba(201,168,76,0.12);}
+  .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;font-weight:700;font-size:0.72rem;background:var(--cream-dark);color:var(--text-mid);}.rank-badge.gold{background:var(--gold);color:#fff;}
+  .score-pill{display:inline-block;padding:1px 8px;border-radius:12px;font-size:0.8rem;font-weight:600;background:#e8eef8;color:var(--navy);}
+  .pts-break{font-size:0.78rem;color:#888;}
+  .picks-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+  .pick-card{background:var(--white);border:1px solid #ddd6c5;border-radius:5px;padding:14px;border-left:4px solid var(--blue);}
+  .pick-card .pc-name{font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--navy);margin-bottom:6px;}
+  .pick-card .pc-meta{font-size:0.8rem;color:#888;}
+  .pick-card .pc-sub{font-size:0.82rem;color:var(--text-mid);margin-top:6px;line-height:1.6;}
+  .pc-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px;}
+  .champ-chip{font-size:0.82rem;background:#fff3d6;color:#8a6d1f;border:1px solid var(--gold);border-radius:10px;padding:2px 10px;font-weight:500;}
+  .champ-chip.correct{background:#d6efdd;color:#155f37;border-color:var(--green-ok);}
+  .champ-chip.wrong{background:#fbe2de;color:#a02012;border-color:var(--red);}
+  .tb-chip{font-size:0.82rem;background:#e6f5ec;color:#155f37;border-radius:10px;padding:2px 10px;}
+  .tb-chip.correct{background:#d6efdd;color:#155f37;border:1px solid var(--green-ok);}
+  .toggle-row{display:flex;gap:7px;margin-top:11px;}
+  .toggle-row button{flex:1;background:transparent;border:1px solid var(--navy);color:var(--navy);font-family:'Playfair Display',serif;font-size:0.8rem;padding:6px;border-radius:3px;cursor:pointer;transition:all 0.15s;}
+  .toggle-row button:hover{background:rgba(0,32,91,0.06);}
+  .toggle-row button.active{background:var(--navy);color:#fff;}
+  .pick-detail{margin-top:12px;border-top:1px solid var(--cream-dark);padding-top:10px;display:none;}
+  .pick-detail.open{display:block;}
+  .rnd-label{font-family:'Libre Baskerville',serif;font-size:0.64rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--navy);margin:9px 0 4px;display:flex;align-items:center;gap:6px;}
+  .rnd-label .pts{background:var(--gold);color:#4a3a10;border-radius:8px;padding:0 6px;font-size:0.6rem;}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;}
+  .chip{font-size:0.76rem;background:#eef2f8;color:var(--navy);border-radius:9px;padding:2px 8px;border:1px solid #dde5f0;}
+  .chip.correct{background:#d6efdd;color:#155f37;border-color:var(--green-ok);}
+  .chip.wrong{background:#fbe2de;color:#a02012;border-color:var(--red);text-decoration:line-through;}
+  .grp-row{margin-bottom:4px;}
+  .grp-name{font-family:'Libre Baskerville',serif;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--navy);margin-right:6px;}
+  .picks-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:0.72rem;color:#666;margin-bottom:12px;align-items:center;}
+  .picks-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .leg-dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .leg-dot.g{background:#d6efdd;border:1px solid var(--green-ok);}
+  .leg-dot.r{background:#fbe2de;border:1px solid var(--red);}
+  .leg-dot.n{background:#eef2f8;border:1px solid #dde5f0;}
+  .participant-row{display:flex;align-items:flex-start;justify-content:space-between;padding:11px 0;border-bottom:1px solid #dce6ef;gap:10px;}.participant-row:last-child{border-bottom:none;}
+  .p-name{font-family:'Playfair Display',serif;font-size:1.04rem;color:var(--navy);}
+  .p-meta{font-size:0.78rem;color:#888;margin-top:3px;}
+  .entry-actions{display:flex;gap:6px;flex-shrink:0;}
+  .chip{display:inline-flex;align-items:center;gap:3px;font-size:0.76rem;padding:2px 8px;background:#e8eef8;border-radius:10px;margin:2px;color:var(--navy);white-space:nowrap;}
+  .chip.correct{background:#dff0e4;color:var(--green-ok);}
+  .chip.wrong{background:#fbe9e7;color:var(--red);}
+  .stage-toggle{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .stage-toggle button{flex:1;min-width:130px;padding:8px;font-family:'Playfair Display',serif;font-size:0.9rem;border:1px solid var(--navy);background:transparent;color:var(--navy);border-radius:3px;cursor:pointer;}
+  .stage-toggle button.active{background:var(--navy);color:#fff;}
+  .stage-toggle button:disabled{opacity:0.4;cursor:not-allowed;}
+  /* ── modal ── */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px;}
+  .modal{background:var(--cream);color:var(--text-dark);border-radius:6px;padding:26px;max-width:400px;width:100%;border-top:3px solid var(--blue);box-shadow:0 8px 40px rgba(0,0,0,0.35);}
+  .modal h3{font-family:'Playfair Display',serif;color:var(--navy-dark);font-size:1.15rem;margin-bottom:8px;}
+  .modal p{font-size:0.86rem;color:#666;margin-bottom:14px;line-height:1.55;}
+  .modal input{width:100%;padding:8px 11px;border:1px solid #c8bfa8;border-radius:3px;font-family:'EB Garamond',serif;font-size:1.1rem;color:var(--text-dark);background:var(--white);outline:none;text-align:center;letter-spacing:0.2em;}
+  .modal-error{color:var(--red);font-size:0.8rem;margin-top:6px;display:none;}
+  .modal-btns{display:flex;gap:10px;margin-top:16px;justify-content:flex-end;}
+  .loading-overlay{position:fixed;inset:0;background:var(--navy-dark);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
+  .loading-overlay p{color:var(--silver);font-family:'Playfair Display',serif;font-size:1.1rem;}
+  .spinner{width:36px;height:36px;border:3px solid rgba(0,83,255,0.2);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--navy);color:#fff;border:1px solid var(--silver);padding:10px 18px;border-radius:4px;font-family:'Playfair Display',serif;font-size:0.9rem;box-shadow:0 4px 20px rgba(0,0,0,0.3);opacity:0;transform:translateY(10px);transition:all 0.3s;pointer-events:none;z-index:999;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .rules-body{font-size:0.97rem;line-height:1.75;color:var(--text-mid);}
+  .rules-body h3{margin-top:18px;}
+  .rules-body ul{margin:8px 0 8px 22px;}
+  .rules-body li{margin-bottom:5px;}
+  .pts-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:0.9rem;}
+  .pts-table th,.pts-table td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--cream-dark);}
+  .pts-table th{font-family:'Libre Baskerville',serif;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--navy);}
+  .pts-table td:last-child{font-family:'Playfair Display',serif;font-weight:700;color:var(--blue);text-align:right;}
+  @media(max-width:480px){.groups-wrap{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading"><div class="spinner"></div><p>Loading the pool...</p></div>
+
+<div id="setup-screen" style="display:none">
+  <div style="margin-bottom:20px"><div style="font-size:30px;margin-bottom:8px">⚽ 🏆 ⚽</div><h1>2026 World Cup Pool</h1><p>Enter your Supabase credentials to get started</p></div>
+  <div class="setup-card">
+    <h2>Connect to Supabase</h2>
+    <p>Paste your Supabase Project URL and Anon Key below. Find these in your Supabase project under <strong>Project Settings → API</strong>.</p>
+    <label>Supabase Project URL</label><input type="text" id="sb-url" placeholder="https://xxxxxxxxxxxx.supabase.co">
+    <label>Supabase Anon Key</label><input type="text" id="sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+    <div class="setup-error" id="setup-error"></div>
+    <button class="btn btn-primary" style="margin-top:18px;width:100%" onclick="connectSupabase()">Connect &amp; Launch Pool</button>
+  </div>
+</div>
+
+<!-- PIN MODAL -->
+<div class="modal-overlay" id="pin-modal" style="display:none">
+  <div class="modal">
+    <h3 id="pin-title">Verify Your PIN</h3>
+    <p id="pin-desc">Enter the 4-digit PIN you chose when submitting your picks.</p>
+    <label>Your 4-Digit PIN</label>
+    <input type="number" id="pin-input" placeholder="· · · ·" oninput="if(this.value.length>4)this.value=this.value.slice(0,4)">
+    <div class="modal-error" id="pin-error"></div>
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closePinModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmPin()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+  <div id="lock-banner" class="lock-banner" style="display:none">🔒 Picks are locked — good luck everyone!</div>
+  <header>
+    <div class="flag-row">⚽ 🏆 ⚽</div>
+    <h1>2026 <em>World Cup</em> Pool</h1>
+    <p class="subtitle">USA · Canada · Mexico · June 11 – July 19, 2026</p>
+    <div class="cap-badge" id="phase-badge">📋 Round 1 — Group Stage Predictions</div>
+    <div class="cap-badge" style="margin-left:6px">💵 $20 Buy-In · Winner Takes All</div>
+  </header>
+
+  <div class="phase-banner" id="phase-banner" style="display:none"></div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('rules',this)">📖 Rules</button>
+    <button class="tab-btn" onclick="showTab('picks',this)">📋 My Picks</button>
+    <button class="tab-btn" onclick="showTab('leaderboard',this)">🏆 Leaderboard</button>
+    <button class="tab-btn" id="admin-tab-btn" onclick="showTab('admin',this)" style="display:none">⚙️ Admin</button>
+  </div>
+  <main>
+
+    <!-- RULES TAB -->
+    <div class="section active" id="tab-rules">
+      <div class="card">
+        <h2>How the Pool Works</h2>
+        <div class="rules-body" id="rules-content">
+          <p>Welcome to the pool! It runs in two rounds across the 2026 World Cup — first you predict how the group stage shakes out, then you fill in the full knockout bracket. Everything is scored on points, and the highest total at the end wins.</p>
+
+          <h3>💵 Buy-In</h3>
+          <p><b>$20 to enter — winner takes all.</b> The player with the highest combined point total (group placements + bracket) when the tournament ends takes the entire pot.</p>
+
+          <h3>🥇 Round 1 — Group Stage Predictions</h3>
+          <p>Before the tournament kicks off, head to the <b>My Picks</b> tab and rank all four teams in each of the 12 groups from 1st to 4th place. You're predicting the final group-stage standings — who wins the group, who finishes runner-up, and who goes home.</p>
+
+          <h3>🏆 Round 2 — Knockout Bracket</h3>
+          <p>Once the group stage wraps up and the 32 qualifiers are set, the bracket round opens automatically. You'll pick the teams that advance through each knockout round: Round of 32 → Round of 16 → Quarterfinals → Semifinals → Final.</p>
+          <p>The 32 teams that make the knockout stage are: the <b>top 2 finishers from each of the 12 groups</b> (24 teams), plus the <b>8 best third-place teams</b> across all groups. The 8 third-place teams are ranked by points, then goal difference, then goals scored — the top 8 of those 12 third-place finishers go through.</p>
+
+          <h3>📊 Scoring</h3>
+          <table class="pts-table">
+            <thead><tr><th>Correct Pick</th><th>Points each</th></tr></thead>
+            <tbody>
+              <tr><td>Group-stage placement (per team, per group)</td><td>1</td></tr>
+              <tr><td>Round of 32 team (reached the knockouts)</td><td>1</td></tr>
+              <tr><td>Round of 16 team (1st knockout round)</td><td>2</td></tr>
+              <tr><td>Quarterfinal team (2nd round)</td><td>4</td></tr>
+              <tr><td>Semifinal team (3rd round)</td><td>8</td></tr>
+              <tr><td>Finalist (Final winner)</td><td>16</td></tr>
+            </tbody>
+          </table>
+          <p style="font-size:0.88rem;color:#888;font-style:italic;">Each team you place correctly earns the points for its round — so a team you ride all the way to the title earns points at every stage along the way (1 for the R32, 2 for the R16, 4 for the QF, 8 for the SF, and 16 for winning the Final). Your group and bracket points add up to your running total on the Leaderboard.</p>
+
+          <h3>⚖️ Tiebreaker</h3>
+          <p>When you fill out your bracket in Round 2, you'll also answer one tiebreaker question: <b>how many total goals will be scored across all the knockout rounds?</b> If two or more people finish tied on total points, whoever's guess is closest to the actual number wins.</p>
+
+          <h3>⏰ Deadlines <span style="font-weight:400;font-size:0.8rem;color:#888">(all times Eastern, ET / EDT)</span></h3>
+          <ul>
+            <li><b>Round 1 — Group picks lock:</b> Thursday, June 11, 2026 at <b>3:00 PM ET</b>, right as the opening match (Mexico vs. South Africa) kicks off. Get all 12 groups ranked before then.</li>
+            <li><b>Round 2 — Bracket picks lock:</b> Sunday, June 28, 2026 at <b>3:00 PM ET</b>, when the first Round of 32 match kicks off. The bracket round opens once the group stage finishes (June 27), so you'll have a window to fill it out with the real qualified teams.</li>
+          </ul>
+          <p style="font-size:0.88rem;color:#888;font-style:italic;">Note: because the tournament is in June–July, the US is on Eastern Daylight Time. FIFA lists every kickoff in ET, which is what these deadlines follow.</p>
+
+          <h3>🔐 Your PIN — Editing Your Picks</h3>
+          <p>When you submit your picks you'll set your own <b>4-digit PIN</b>. This is how you get back in to change anything before the deadline.</p>
+          <ul>
+            <li><b>Write your PIN down.</b> You'll need it every time you want to edit, and there's no "forgot PIN" reset — so don't lose it.</li>
+            <li><b>Change your mind anytime before lock.</b> Go to <b>My Picks</b>, hit <b>✏️ Edit</b> next to your name, enter your PIN, and tweak whatever you want. Last version saved before the deadline is the one that counts.</li>
+            <li><b>Two separate deadlines, two chances to edit.</b> Your group picks are editable up until June 11, and your bracket picks are editable up until June 28 — independently of each other.</li>
+            <li><b>Once a round locks, it's final.</b> No edits to that round after its deadline, so don't wait until the last minute.</li>
+            <li><b>Everyone's picks stay hidden</b> until Round 1 locks, so no one can copy off you before the deadline. 🤫</li>
+          </ul>
+
+          <div class="info-box" style="margin-top:16px">Good luck — may your bracket survive longer than your group-stage darkhorse. ⚽</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY PICKS TAB -->
+    <div class="section" id="tab-picks">
+      <div class="card" id="submit-card">
+        <h2 id="form-title">Submit Your Picks</h2>
+        <div id="r2-edit-instruction" class="info-box" style="display:none">
+          ✏️ <b>Round 2 is open.</b> To add your bracket picks, scroll down to <b>Submitted Entries</b>, find your name, and tap <b>Edit</b>. Enter your PIN, switch to the <b>🏆 Round 2: Bracket</b> tab, make your picks, fill in the tiebreaker, and save. Your original entry will be updated — don't create a new one.
+        </div>
+        <div class="form-row" id="name-pin-row">
+          <div class="form-group"><label>Your Name</label><input type="text" id="p-name" placeholder="e.g. Matt Smith"></div>
+          <div class="form-group" style="max-width:140px"><label>Set a 4-Digit PIN</label><input type="number" id="p-pin" placeholder="1234" oninput="if(this.value.length>4)this.value=this.value.slice(0,4)"></div>
+        </div>
+        <p id="pin-note" style="font-size:0.8rem;color:#888;margin-bottom:12px;font-style:italic;">📌 Remember your PIN — you'll need it to edit your picks before each round locks.</p>
+
+        <div class="stage-toggle" id="stage-toggle">
+          <button id="st-groups" class="active" onclick="setStage('groups')">🥇 Round 1: Groups</button>
+          <button id="st-bracket" onclick="setStage('bracket')">🏆 Round 2: Bracket</button>
+        </div>
+
+        <div id="groups-editor"></div>
+        <div id="bracket-editor" style="display:none"></div>
+
+        <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;" id="submit-row">
+          <button class="btn btn-primary" id="submit-btn">Submit Picks</button>
+          <button class="btn btn-secondary" id="cancel-edit-btn" onclick="cancelEdit()" style="display:none">Cancel Edit</button>
+          <span id="pick-summary" style="font-size:0.86rem;color:#888;font-style:italic;"></span>
+        </div>
+      </div>
+      <div class="card" id="locked-card" style="display:none;border-top-color:var(--red)">
+        <h2 style="color:var(--red)">🔒 Picks Are Locked</h2>
+        <p style="font-size:0.95rem;color:#555;line-height:1.6">This round is locked. Check the Leaderboard tab to follow the standings!</p>
+      </div>
+      <div class="card" id="entries-card">
+        <h2>Submitted Entries <span class="count-badge" id="p-count">0</span></h2>
+        <div id="participants-list"><div class="empty-state">No entries yet — be the first!</div></div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD TAB -->
+    <div class="section" id="tab-leaderboard">
+      <div class="card"><h2>Pool Leaderboard</h2><div id="lb-content"><div class="empty-state">Submit picks to see standings.</div></div></div>
+      <p style="font-size:0.78rem;color:#888;text-align:center;margin-top:7px;font-style:italic;">Higher score is better. Points update live as the admin enters results.</p>
+      <div class="card" id="allpicks-card"><h2>Everyone's Picks</h2><div class="picks-grid" id="all-picks-grid"><div class="empty-state">No picks yet.</div></div></div>
+    </div>
+
+    <!-- ADMIN TAB -->
+    <div class="section" id="tab-admin">
+      <div class="card">
+        <h2>Tournament Controls <span class="admin-badge">Admin</span></h2>
+        <div class="info-box">Set the live phase and lock state. Players see results scored instantly.</div>
+        <div class="form-row">
+          <div class="form-group"><label>Current Phase</label>
+            <select id="admin-phase" onchange="adminSetPhase()">
+              <option value="groups_open">Round 1 open — group predictions</option>
+              <option value="groups_locked">Round 1 locked — group stage underway</option>
+              <option value="bracket_open">Round 2 open — bracket picks</option>
+              <option value="bracket_locked">Round 2 locked — knockouts underway</option>
+              <option value="complete">Tournament complete</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Actual Group Results <span class="admin-badge">Admin</span></h2>
+        <div class="info-box">Enter the real 1st–4th finish for each group. Used to score Round 1 (1 pt per correct placement).</div>
+        <div id="admin-groups"></div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="saveResults()">Save Group Results</button>
+      </div>
+      <div class="card">
+        <h2>Actual Bracket Results <span class="admin-badge">Admin</span></h2>
+        <div class="info-box">Enter the teams that actually reached each knockout round, plus the champion. Used to score Round 2.</div>
+        <div id="admin-bracket"></div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="saveResults()">Save Bracket Results</button>
+      </div>
+      <div class="card">
+        <h2>Tiebreaker Result <span class="admin-badge">Admin</span></h2>
+        <div class="info-box">Once the tournament ends, enter the actual total number of goals scored across all knockout rounds. This breaks any ties on the leaderboard — closest guess wins.</div>
+        <label>Actual total knockout goals</label>
+        <input type="number" id="admin-knockout-goals" min="0" placeholder="e.g. 140" style="max-width:200px" onchange="results.knockoutGoals=this.value">
+        <button class="btn btn-primary" style="margin-top:12px;display:block" onclick="saveResults()">Save Tiebreaker</button>
+      </div>
+      <div class="card" style="border-top-color:var(--red)">
+        <h2 style="color:var(--red)">⚠️ Edit / Remove Entries</h2>
+        <p style="font-size:0.86rem;color:#888;margin-bottom:12px">Remove a participant so they can resubmit, or edit their picks directly.</p>
+        <div id="admin-remove-list"><div class="empty-state">No entries yet.</div></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG — replace these with your actual values
+// ══════════════════════════════════════════════════════
+const SUPABASE_URL   = 'https://ebwkxpogkkxdtdfxvzeh.supabase.co';
+const SUPABASE_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVid2t4cG9na2t4ZHRkZnh2emVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MzEzMzQsImV4cCI6MjA5NjUwNzMzNH0.Fsdw9Bt_bLXiMrhrF5mjLf2WP8CZx52Xg3IBtXYDaaQ';
+const ADMIN_PASSWORD = 'worldcup2026';
+// ══════════════════════════════════════════════════════
+
+// ── 2026 World Cup groups (confirmed draw) ──
+const GROUPS = {
+  A:["Mexico","South Korea","South Africa","Czechia"],
+  B:["Canada","Switzerland","Qatar","Bosnia-Herzegovina"],
+  C:["Brazil","Morocco","Scotland","Haiti"],
+  D:["USA","Paraguay","Australia","Turkiye"],
+  E:["Germany","Ecuador","Ivory Coast","Curacao"],
+  F:["Netherlands","Japan","Tunisia","Sweden"],
+  G:["Belgium","Iran","Egypt","New Zealand"],
+  H:["Spain","Uruguay","Saudi Arabia","Cape Verde"],
+  I:["France","Senegal","Norway","Iraq"],
+  J:["Argentina","Austria","Algeria","Jordan"],
+  K:["Portugal","Colombia","Uzbekistan","DR Congo"],
+  L:["England","Croatia","Panama","Ghana"]
+};
+const GROUP_KEYS = Object.keys(GROUPS);
+const ALL_TEAMS = GROUP_KEYS.flatMap(k=>GROUPS[k]);
+
+// ── Knockout bracket: connected tree (March Madness style) ──
+// Round of 32 = 16 ties. Each tie's seed slots are filled by the actual qualifiers
+// (admin enters them). Players pick a winner of each tie; winners flow to the next round.
+// Rounds store the PICKED WINNER per match: r32=16, r16=8, qf=4, sf=2, f=1 (champion).
+const BR_ROUNDS = [
+  {key:"r32", label:"Round of 32",   matches:16, pts:1,  note:"pick the winner of each of the 16 ties"},
+  {key:"r16", label:"Round of 16",   matches:8,  pts:2,  note:"1st knockout round"},
+  {key:"qf",  label:"Quarterfinals", matches:4,  pts:4,  note:"2nd round"},
+  {key:"sf",  label:"Semifinals",    matches:2,  pts:8,  note:"3rd round"},
+  {key:"f",   label:"Final",         matches:1,  pts:16, note:"pick the champion"}
+];
+// Official 2026 R32 match numbers (73-88) and how their winners pair into the R16.
+// Each R32 tie has two seed slots (home/away). The 16 ties, in bracket order:
+const R32_TIES = [
+  {m:74, slots:["W E","3rd A/B/C/D/F"]},
+  {m:77, slots:["W I","3rd C/D/F/G/H"]},
+  {m:73, slots:["RU A","RU B"]},
+  {m:75, slots:["W F","RU C"]},
+  {m:76, slots:["W C","RU F"]},
+  {m:78, slots:["RU E","RU I"]},
+  {m:79, slots:["W A","3rd C/E/F/H/I"]},
+  {m:80, slots:["W L","3rd E/H/I/J/K"]},
+  {m:83, slots:["RU K","RU L"]},
+  {m:84, slots:["W H","RU J"]},
+  {m:81, slots:["W D","3rd B/E/F/I/J"]},
+  {m:82, slots:["W G","3rd A/E/H/I/J"]},
+  {m:86, slots:["W J","RU H"]},
+  {m:88, slots:["RU D","RU G"]},
+  {m:85, slots:["W B","3rd E/F/G/I/J"]},
+  {m:87, slots:["W K","3rd D/E/I/J/L"]}
+];
+// Each round's match i is fed by the previous round's matches [2i, 2i+1].
+
+let sb=null, participants=[], results={}, settings={phase:'groups_open'};
+let isAdmin=false, pinCallback=null, editingId=null, currentStage='groups';
+let bracketTab='r32'; // which knockout round tab is showing
+// working draft for the current user's picks
+let draftGroups={}, draftBracket={}, draftTiebreak="";
+
+window.onload=async()=>{
+  const savedUrl=localStorage.getItem('wc_sb_url'), savedKey=localStorage.getItem('wc_sb_key');
+  const url=(SUPABASE_URL!=='YOUR_SUPABASE_URL'?SUPABASE_URL:null)||savedUrl;
+  const key=(SUPABASE_KEY!=='YOUR_SUPABASE_ANON_KEY'?SUPABASE_KEY:null)||savedKey;
+  if(url&&key){await initSupabase(url,key);}
+  else{document.getElementById('loading').style.display='none';document.getElementById('setup-screen').style.display='flex';}
+};
+
+async function connectSupabase(){
+  const url=document.getElementById('sb-url').value.trim(), key=document.getElementById('sb-key').value.trim();
+  if(!url||!key){showSetupError('Please enter both fields.');return;}
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('loading').style.display='flex';
+  const ok=await initSupabase(url,key);
+  if(!ok){document.getElementById('loading').style.display='none';document.getElementById('setup-screen').style.display='flex';showSetupError('Could not connect. Double-check your URL and key.');}
+  else{localStorage.setItem('wc_sb_url',url);localStorage.setItem('wc_sb_key',key);}
+}
+
+async function initSupabase(url,key){
+  try{
+    sb=supabase.createClient(url,key);
+    const{error}=await sb.from('wc_participants').select('id').limit(1);
+    if(error&&error.code!=='PGRST116'&&error.code!=='42P01')throw error;
+    initDraft(); await loadAll(); checkAdmin();
+    renderStageEditors(); applyPhaseState(); renderAdminEditors();
+    document.getElementById('submit-btn').onclick=submitPicks;
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+    sb.channel('wc_pool')
+      .on('postgres_changes',{event:'*',schema:'public',table:'wc_participants'},()=>loadParticipants())
+      .on('postgres_changes',{event:'*',schema:'public',table:'wc_state'},()=>loadState())
+      .subscribe();
+    return true;
+  }catch(e){console.error(e);return false;}
+}
+
+function checkAdmin(){
+  const stored=localStorage.getItem('wc_admin');
+  if(stored===ADMIN_PASSWORD){enableAdmin();return;}
+  const pw=prompt('Admin access? Enter password (cancel to continue as regular user):');
+  if(pw===ADMIN_PASSWORD){localStorage.setItem('wc_admin',pw);enableAdmin();showToast('Admin mode enabled ✓');}
+}
+function enableAdmin(){
+  isAdmin=true;
+  document.getElementById('admin-tab-btn').style.display='';
+}
+
+// ══ PHASE / LOCK STATE ════════════════════════════════
+function phase(){return settings.phase||'groups_open';}
+function groupsLocked(){return ['groups_locked','bracket_open','bracket_locked','complete'].includes(phase());}
+function bracketOpen(){return ['bracket_open','bracket_locked','complete'].includes(phase());}
+function bracketLocked(){return ['bracket_locked','complete'].includes(phase());}
+
+function applyPhaseState(){
+  const labels={groups_open:'📋 Round 1 — Group Stage Predictions (OPEN)',
+    groups_locked:'🔒 Round 1 Locked — Group Stage Underway',
+    bracket_open:'🏆 Round 2 — Bracket Picks (OPEN)',
+    bracket_locked:'🔒 Round 2 Locked — Knockouts Underway',
+    complete:'🏆 Tournament Complete'};
+  document.getElementById('phase-badge').textContent=labels[phase()]||labels.groups_open;
+  const banner=document.getElementById('phase-banner');
+  banner.style.display='block';
+  banner.textContent=bracketOpen()?'Bracket round is live — make your knockout picks under My Picks!':
+    (groupsLocked()?'Group stage is underway — Round 1 picks are locked.':'Round 1 is open — submit your group-stage predictions!');
+  // enable/disable stage toggle
+  document.getElementById('st-bracket').disabled=!bracketOpen();
+  if(!bracketOpen()&&currentStage==='bracket'){setStage('groups');}
+  // admin phase selector sync
+  const ap=document.getElementById('admin-phase'); if(ap) ap.value=phase();
+  refreshLockBanner();
+  renderStageEditors();
+}
+function stageLocked(stage){
+  if(stage==='groups') return groupsLocked();
+  return bracketLocked();
+}
+function refreshLockBanner(){
+  const locked=stageLocked(currentStage);
+  const editing=!!editingId;
+  // Round 2 open phase = no new submissions allowed (everyone edits their existing entry)
+  const round2NoNewEntries = bracketOpen() && !bracketLocked() && !isAdmin;
+
+  document.getElementById('lock-banner').style.display=locked&&!editing?'block':'none';
+  document.getElementById('submit-card').style.display='block';
+  document.getElementById('locked-card').style.display='none';
+
+  const namePinRow=document.getElementById('name-pin-row');
+  const pinNote=document.getElementById('pin-note');
+  const submitBtn=document.getElementById('submit-btn');
+  const instruction=document.getElementById('r2-edit-instruction');
+  const title=document.getElementById('form-title');
+
+  // hide name/PIN + the bottom submit button whenever the current stage is locked
+  const hideInputs=locked&&!editing;
+
+  if(round2NoNewEntries && !editing){
+    // Round 2 open, not editing: hide the new-submission form entirely, show edit instructions
+    namePinRow.style.display='none';
+    pinNote.style.display='none';
+    submitBtn.style.display='none';
+    instruction.style.display='block';
+    title.textContent='Add Your Round 2 Bracket Picks';
+  } else {
+    instruction.style.display='none';
+    namePinRow.style.display=hideInputs?'none':'flex';
+    pinNote.style.display=hideInputs?'none':'block';
+    submitBtn.style.display=hideInputs?'none':'inline-block';
+    if(!editing){
+      title.textContent=hideInputs?'Your Picks (Locked 🔒)':'Submit Your Picks';
+    }
+  }
+}
+
+// ══ DATA LOADING ══════════════════════════════════════
+async function loadAll(){await Promise.all([loadParticipants(),loadState()]);}
+
+async function loadParticipants(){
+  const{data,error}=await sb.from('wc_participants').select('id,name,groups,bracket,tiebreak,pin,created_at').order('created_at',{ascending:true});
+  if(error){console.error(error);return;}
+  participants=(data||[]).map(p=>({id:p.id,name:p.name,pin:p.pin||'—',
+    tiebreak:(p.tiebreak===null||p.tiebreak===undefined)?null:Number(p.tiebreak),
+    groups:p.groups?JSON.parse(p.groups):{},
+    bracket:p.bracket?JSON.parse(p.bracket):{}}));
+  document.getElementById('p-count').textContent=participants.length;
+  renderParticipants();renderAllPicks();renderLeaderboard();renderAdminRemove();
+}
+
+async function loadState(){
+  const{data,error}=await sb.from('wc_state').select('*');
+  if(error){console.error(error);return;}
+  (data||[]).forEach(r=>{
+    if(r.key==='settings') settings=r.value?JSON.parse(r.value):settings;
+    if(r.key==='results') results=r.value?JSON.parse(r.value):results;
+  });
+  applyPhaseState();renderLeaderboard();renderAdminEditors();
+}
+
+// ══ TABS ══════════════════════════════════════════════
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');
+  if(id==='leaderboard'){renderLeaderboard();renderAllPicks();}
+  if(id==='admin'){renderAdminEditors();renderAdminRemove();}
+  if(id==='picks'){renderStageEditors();}
+}
+
+// ══ DRAFT INIT ════════════════════════════════════════
+function initDraft(){
+  draftGroups={}; GROUP_KEYS.forEach(k=>draftGroups[k]=["","","",""]);
+  draftBracket={}; BR_ROUNDS.forEach(r=>{ draftBracket[r.key]=Array(r.matches).fill(""); });
+  draftTiebreak="";
+}
+
+function setStage(stage){
+  currentStage=stage;
+  document.getElementById('st-groups').classList.toggle('active',stage==='groups');
+  document.getElementById('st-bracket').classList.toggle('active',stage==='bracket');
+  document.getElementById('groups-editor').style.display=stage==='groups'?'block':'none';
+  document.getElementById('bracket-editor').style.display=stage==='bracket'?'block':'none';
+  // The bottom submit row is only for the Groups stage. In the Bracket stage,
+  // the submit button lives on the Tiebreaker sub-tab instead.
+  const submitRow=document.getElementById('submit-row');
+  if(submitRow) submitRow.style.display=stage==='bracket'?'none':'flex';
+  refreshLockBanner();
+  updatePickSummary();
+  renderBracketEditor();
+}
+
+function updateBracketSummary(){
+  const el=document.getElementById('br-pick-summary'); if(!el) return;
+  let filled=0,total=0;
+  BR_ROUNDS.forEach(r=>{ total+=r.matches; filled+=(draftBracket[r.key]||[]).filter(Boolean).length; });
+  const tb=(draftTiebreak!==''&&draftTiebreak!=null)?'✓ tiebreaker set':'⚠️ tiebreaker not set';
+  el.textContent=`${filled}/${total} winners picked · ${tb}`;
+}
+</script>
+<script>
+// ══ STAGE EDITORS (group ranking + bracket) ═══════════
+function renderStageEditors(){ renderGroupsEditor(); renderBracketEditor(); }
+
+function renderGroupsEditor(){
+  const el=document.getElementById('groups-editor'); if(!el) return;
+  if(!draftGroups||!Object.keys(draftGroups).length) initDraft();
+  const locked=groupsLocked()&&!isAdmin;
+  let html='<div class="bracket-note">Rank all four teams in each group, 1st through 4th.</div><div class="groups-wrap">';
+  GROUP_KEYS.forEach(k=>{
+    const picks=draftGroups[k]||["","","",""];
+    html+=`<div class="group-block"><div class="group-title">Group ${k}</div><div class="group-grid">`;
+    for(let pos=0;pos<4;pos++){
+      const sel=picks[pos]||"";
+      html+=`<div class="rank-row"><span class="rank-pos">${pos+1}</span>
+        <select ${locked?'disabled':''} onchange="setGroupPick('${k}',${pos},this.value)">
+          <option value="">— pick team —</option>
+          ${GROUPS[k].map(t=>`<option value="${t}" ${sel===t?'selected':''}>${t}</option>`).join('')}
+        </select></div>`;
+    }
+    html+='</div></div>';
+  });
+  html+='</div>';
+  el.innerHTML=html;
+}
+
+function setGroupPick(group,pos,team){
+  if(groupsLocked()&&!isAdmin){showToast('Round 1 is locked 🔒');renderGroupsEditor();return;}
+  // prevent the same team appearing twice in a group: clear any other slot holding it
+  if(team){
+    draftGroups[group]=draftGroups[group].map((t,i)=>i!==pos&&t===team?"":t);
+  }
+  draftGroups[group][pos]=team;
+  renderGroupsEditor(); updatePickSummary();
+}
+
+// Returns the array of 32 seeded qualifier teams (admin-entered), or placeholder slot labels before they're set.
+function qualifierTeams(){
+  const q=(results&&results.qualifiers)||[];
+  // q is a flat array of 32 teams ordered to match R32_TIES slots (tie0 home, tie0 away, tie1 home, ...)
+  return q;
+}
+// The two competitors entering match `i` of round `rKey`.
+function matchTeams(rKey,i){
+  if(rKey==='r32'){
+    const q=qualifierTeams();
+    const a=q[i*2], b=q[i*2+1];
+    const slots=R32_TIES[i].slots;
+    return [a||('〈'+slots[0]+'〉'), b||('〈'+slots[1]+'〉'), !!a, !!b];
+  }
+  // later rounds: competitors are the previous round's winners at 2i, 2i+1
+  const order=['r32','r16','qf','sf','f'];
+  const prevKey=order[order.indexOf(rKey)-1];
+  const prev=draftBracket[prevKey]||[];
+  const a=prev[i*2]||"", b=prev[i*2+1]||"";
+  return [a, b, !!a, !!b];
+}
+
+function renderBracketEditor(){
+  const el=document.getElementById('bracket-editor'); if(!el) return;
+  if(!bracketOpen()){
+    el.innerHTML='<div class="info-box">🔒 The bracket round opens once the group stage is complete. Check back after the group games finish — the 32 qualified teams will be seeded in automatically.</div>';
+    return;
+  }
+  if(!draftBracket||!Object.keys(draftBracket).length) initDraft();
+  const locked=bracketLocked()&&!editingId;
+  const haveQ=qualifierTeams().length===32;
+
+  // sub-tabs for each knockout round + tiebreaker
+  let html='<div class="br-tabs">';
+  BR_ROUNDS.forEach(r=>{
+    const done=draftBracket[r.key]?draftBracket[r.key].filter(Boolean).length:0;
+    html+=`<button class="br-tab ${bracketTab===r.key?'active':''}" onclick="setBracketTab('${r.key}')">${r.label}<span class="br-tab-count">${done}/${r.matches}</span></button>`;
+  });
+  // tiebreaker tab
+  html+=`<button class="br-tab ${bracketTab==='tiebreak'?'active':''}" onclick="setBracketTab('tiebreak')">⚖️ Tiebreaker<span class="br-tab-count">${draftTiebreak!==''&&draftTiebreak!=null?'set':'—'}</span></button>`;
+  html+='</div>';
+
+  if(!haveQ){
+    html+='<div class="info-box">⏳ Waiting on the final group-stage results to be posted. Once they\'re in, the 32 qualified teams appear in the Round of 32 below and you can start picking.</div>';
+  }
+
+  // ── Tiebreaker tab ──
+  if(bracketTab==='tiebreak'){
+    html+=`<div class="br-round"><h3>⚖️ Tiebreaker</h3>
+      <div class="bracket-note">If two or more people finish tied on points, whoever's guess is closest to the actual total wins.</div>
+      <div style="background:var(--white);border:1px solid #d8e0ea;border-radius:5px;padding:16px;">
+        <label style="margin-bottom:8px">How many total goals will be scored in the knockout rounds?</label>
+        <input type="number" id="tiebreak-input" min="0" placeholder="e.g. 140" value="${draftTiebreak!==''&&draftTiebreak!=null?draftTiebreak:''}" ${locked?'disabled':''}
+          oninput="draftTiebreak=this.value" style="max-width:200px;font-size:1.1rem;">
+        <p style="font-size:0.78rem;color:#888;margin-top:8px;font-style:italic;">Total goals across all knockout matches — Round of 32 through the Final.</p>
+      </div>`;
+    // submit button appears here, on the tiebreaker tab
+    const round2NoNewEntries = bracketOpen() && !bracketLocked() && !isAdmin && !editingId;
+    if(round2NoNewEntries){
+      html+=`<div class="info-box" style="margin-top:16px">✏️ To save your bracket, scroll down to <b>Submitted Entries</b>, tap <b>Edit</b> next to your name, and enter your PIN. Then come back here and save — this updates your original entry instead of creating a new one.</div>`;
+    } else if(!locked){
+      html+=`<div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-primary" id="br-submit-btn">${editingId?'Save Changes':'Submit Picks'}</button>
+        ${editingId?'<button class="btn btn-secondary" onclick="cancelEdit()">Cancel Edit</button>':''}
+        <span id="br-pick-summary" style="font-size:0.86rem;color:#888;font-style:italic;"></span>
+      </div>`;
+    }
+    html+='</div>';
+    el.innerHTML=html;
+    // wire up submit button
+    const sb2=document.getElementById('br-submit-btn');
+    if(sb2){ sb2.onclick=editingId?(()=>saveEdit(editingId)):submitPicks; }
+    updateBracketSummary();
+    return;
+  }
+
+  const r=BR_ROUNDS.find(x=>x.key===bracketTab);
+  const ptsTag=`<span class="br-pts">${r.pts} pt${r.pts>1?'s':''} per correct pick</span>`;
+  html+=`<div class="br-round"><h3>${r.label} ${ptsTag}</h3>`;
+  html+=`<div class="bracket-note">${bracketTab==='r32'?'Tap the team you think wins each tie. Winners advance to the Round of 16 tab.':'These matchups are built from your previous-round winners. Pick who advances.'}</div>`;
+
+  for(let i=0;i<r.matches;i++){
+    const [a,b,aReal,bReal]=matchTeams(r.key,i);
+    const pick=draftBracket[r.key][i]||"";
+    const ready=aReal&&bReal;
+    const mlabel = r.key==='r32' ? ('M'+R32_TIES[i].m) : ('#'+(i+1));
+    html+=`<div class="br-tie ${ready?'':'pending'}">
+      <div class="br-tie-num">${mlabel}</div>
+      <div class="br-tie-teams">
+        ${teamBtn(r.key,i,a,aReal,pick,locked,ready)}
+        ${teamBtn(r.key,i,b,bReal,pick,locked,ready)}
+      </div>
+    </div>`;
+  }
+
+  // Champion callout in the Final tab
+  if(r.key==='f'){
+    const champ=draftBracket.f[0]||"";
+    html+=`<div class="br-champ-box"><div class="br-champ-label">🏆 Your Champion <span class="br-pts">16 pts</span></div>
+      <div class="br-champ-name">${champ?esc(champ):'— pick the Final winner above —'}</div></div>`;
+  }
+  html+='</div>';
+
+  el.innerHTML=html;
+}
+
+function teamBtn(rKey,i,team,real,pick,locked,ready){
+  if(!real){ // placeholder slot, not yet determined
+    return `<div class="br-team placeholder">${esc(team)}</div>`;
+  }
+  const selected=pick===team;
+  const dis=locked?'disabled':'';
+  return `<button class="br-team ${selected?'picked':''}" ${dis} onclick="pickWinner('${rKey}',${i},'${esc(team).replace(/'/g,"\\'")}')">${esc(team)}${selected?' <span class="br-check">✓</span>':''}</button>`;
+}
+
+function pickWinner(rKey,i,team){
+  if(bracketLocked()&&!editingId){showToast('Bracket is locked 🔒');return;}
+  const order=['r32','r16','qf','sf','f'];
+  const prev=draftBracket[rKey][i];
+  if(prev===team){ // tap again to deselect
+    draftBracket[rKey][i]="";
+  } else {
+    draftBracket[rKey][i]=team;
+  }
+  // clear any downstream picks that depended on the team we just changed/removed
+  clearDownstream(rKey,i);
+  renderBracketEditor(); updatePickSummary();
+}
+
+// When a pick at round rKey match i changes, the winner flows into the next round's
+// match floor(i/2). If a later-round pick was the old team, it's no longer valid — clear it.
+function clearDownstream(rKey,i){
+  const order=['r32','r16','qf','sf','f'];
+  let idx=order.indexOf(rKey);
+  let mi=i;
+  for(let r=idx+1;r<order.length;r++){
+    mi=Math.floor(mi/2);
+    const k=order[r];
+    // the team feeding this match may have changed; if the stored winner isn't one of the
+    // two current competitors, clear it
+    const [a,b]=matchTeams(k,mi);
+    if(draftBracket[k][mi] && draftBracket[k][mi]!==a && draftBracket[k][mi]!==b){
+      draftBracket[k][mi]="";
+    }
+  }
+}
+
+function setBracketTab(k){ bracketTab=k; renderBracketEditor(); }
+
+function updatePickSummary(){
+  const el=document.getElementById('pick-summary'); if(!el) return;
+  if(currentStage==='groups'){
+    let filled=0,total=48;
+    GROUP_KEYS.forEach(k=>draftGroups[k].forEach(t=>{if(t)filled++;}));
+    el.textContent=`${filled}/${total} placements set`;
+  } else if(bracketOpen()){
+    let filled=0,total=0;
+    BR_ROUNDS.forEach(r=>{ total+=r.matches; filled+=(draftBracket[r.key]||[]).filter(Boolean).length; });
+    el.textContent=`${filled}/${total} winners picked`;
+  } else el.textContent='';
+}
+
+// ══ SUBMIT / EDIT ══════════════════════════════════════
+async function submitPicks(){
+  // During Round 2 (bracket open), no brand-new entries — everyone must edit their existing one.
+  if(!isAdmin && bracketOpen() && !bracketLocked()){
+    showToast('Round 2: tap Edit on your existing entry to add bracket picks.');
+    return;
+  }
+  const name=document.getElementById('p-name').value.trim();
+  const pin=document.getElementById('p-pin').value.trim();
+  if(!name){showToast('Enter your name first.');return;}
+  if(pin.length!==4||isNaN(pin)){showToast('Set a 4-digit PIN first.');return;}
+  // validate current stage
+  if(currentStage==='groups'){
+    if(groupsLocked()){showToast('Round 1 is locked 🔒');return;}
+    for(const k of GROUP_KEYS){ if(draftGroups[k].filter(Boolean).length!==4){showToast(`Finish ranking Group ${k} (all 4 teams).`);return;} }
+  } else {
+    if(!bracketOpen()){showToast('Bracket round is not open yet.');return;}
+    if(bracketLocked()){showToast('Round 2 is locked 🔒');return;}
+    if(draftTiebreak===''||draftTiebreak==null||isNaN(draftTiebreak)){showToast('Enter your tiebreaker guess (total knockout goals).');setBracketTab('tiebreak');return;}
+  }
+  const row={name,
+    groups:JSON.stringify(draftGroups),
+    bracket:JSON.stringify(draftBracket),
+    tiebreak:(draftTiebreak===''||draftTiebreak==null)?null:Number(draftTiebreak),
+    pin};
+  const{error}=await sb.from('wc_participants').insert([row]);
+  if(error){showToast('Error saving. Try again.');console.error(error);return;}
+  resetForm();
+  showToast('Picks submitted! 🎉');
+  await loadParticipants();
+}
+
+function resetForm(){
+  initDraft();
+  ['p-name','p-pin'].forEach(id=>document.getElementById(id).value='');
+  renderStageEditors();updatePickSummary();
+}
+
+function openPinModal(title,desc,cb){
+  document.getElementById('pin-title').textContent=title;
+  document.getElementById('pin-desc').textContent=desc;
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-error').style.display='none';
+  pinCallback=cb;
+  document.getElementById('pin-modal').style.display='flex';
+}
+function closePinModal(){document.getElementById('pin-modal').style.display='none';pinCallback=null;editingId=null;}
+async function confirmPin(){
+  const entered=document.getElementById('pin-input').value.trim();
+  if(!entered||entered.length!==4){showPinErr('Enter your 4-digit PIN.');return;}
+  if(isAdmin){ // admin bypass
+    document.getElementById('pin-modal').style.display='none'; if(pinCallback)pinCallback(); return;
+  }
+  const{data,error}=await sb.from('wc_participants').select('id,pin').eq('id',editingId).single();
+  if(error||!data){showPinErr('Could not verify. Try again.');return;}
+  if(String(data.pin)!==String(entered)){showPinErr('Incorrect PIN. Try again.');return;}
+  document.getElementById('pin-modal').style.display='none';
+  if(pinCallback)pinCallback();
+}
+function showPinErr(m){const e=document.getElementById('pin-error');e.textContent=m;e.style.display='block';}
+
+function startEdit(id){
+  if(!isAdmin && groupsLocked() && !bracketOpen()){showToast('Round 1 is locked 🔒');return;}
+  if(!isAdmin && bracketLocked()){showToast('Round 2 is locked 🔒');return;}
+  editingId=id;
+  openPinModal('Edit Your Picks','Enter your 4-digit PIN to edit your picks.',()=>loadEditForm(id));
+}
+function adminEdit(id){ // admin can edit without pin
+  editingId=id;
+  if(isAdmin){ loadEditForm(id); }
+  else startEdit(id);
+}
+function loadEditForm(id){
+  const p=participants.find(x=>x.id===id);if(!p)return;
+  document.getElementById('p-name').value=p.name;
+  document.getElementById('p-pin').value='';
+  draftGroups={}; GROUP_KEYS.forEach(k=>draftGroups[k]=(p.groups&&p.groups[k])?[...p.groups[k]]:["","","",""]);
+  draftBracket={}; BR_ROUNDS.forEach(r=>{ draftBracket[r.key]=(p.bracket&&p.bracket[r.key])?[...p.bracket[r.key]]:Array(r.matches).fill(""); });
+  draftTiebreak=(p.tiebreak===null||p.tiebreak===undefined)?"":String(p.tiebreak);
+  renderStageEditors();updatePickSummary();
+  document.getElementById('form-title').textContent='Editing: '+p.name;
+  const btn=document.getElementById('submit-btn');btn.textContent='Save Changes';btn.onclick=()=>saveEdit(id);
+  document.getElementById('cancel-edit-btn').style.display='inline-block';
+  refreshLockBanner();
+  showTab('picks',document.querySelectorAll('.tab-btn')[1]);
+  // If Round 2 is the active editable round, jump to the bracket stage so the
+  // Save button (which lives on the Tiebreaker sub-tab) is reachable.
+  if(bracketOpen()&&!bracketLocked()){ setStage('bracket'); }
+  else { setStage('groups'); }
+  document.getElementById('submit-card').scrollIntoView({behavior:'smooth'});
+  showToast('Edit your picks then click Save Changes.');
+}
+async function saveEdit(id){
+  const name=document.getElementById('p-name').value.trim();
+  const pin=document.getElementById('p-pin').value.trim();
+  if(!name){showToast('Enter your name.');return;}
+  // enforce locks unless admin
+  if(!isAdmin){
+    if(groupsLocked()&&!bracketOpen()){showToast('Round 1 is locked 🔒');cancelEdit();return;}
+    if(bracketLocked()){showToast('Round 2 is locked 🔒');cancelEdit();return;}
+  }
+  // only save the round(s) that are currently open
+  const upd={name};
+  if(!isAdmin && bracketOpen() && !bracketLocked()){
+    // Round 2 open: only save bracket + tiebreak, preserve existing groups
+    upd.bracket=JSON.stringify(draftBracket);
+    upd.tiebreak=(draftTiebreak===''||draftTiebreak==null)?null:Number(draftTiebreak);
+  } else if(!isAdmin && !groupsLocked()){
+    // Round 1 open: save groups
+    upd.groups=JSON.stringify(draftGroups);
+  } else {
+    // admin: save everything
+    upd.groups=JSON.stringify(draftGroups);
+    upd.bracket=JSON.stringify(draftBracket);
+    upd.tiebreak=(draftTiebreak===''||draftTiebreak==null)?null:Number(draftTiebreak);
+  }
+  if(pin.length===4&&!isNaN(pin))upd.pin=pin;
+  const{data,error}=await sb.from('wc_participants').update(upd).eq('id',id).select();
+  if(error){showToast('Error saving: '+error.message);console.error(error);return;}
+  if(!data||data.length===0){showToast('Update failed — check Supabase RLS policy.');return;}
+  cancelEdit();showToast('Picks updated! ✓');
+  await loadParticipants();
+}
+function cancelEdit(){
+  editingId=null;resetForm();
+  document.getElementById('form-title').textContent='Submit Your Picks';
+  const btn=document.getElementById('submit-btn');btn.textContent='Submit Picks';btn.onclick=submitPicks;
+  document.getElementById('cancel-edit-btn').style.display='none';
+  refreshLockBanner();
+}
+
+// ══ SCORING ════════════════════════════════════════════
+function scoreParticipant(p){
+  let groupPts=0, bracketPts=0, correctGroups=0;
+  // Round 1: 1 pt per correct group placement
+  const ar=results.groups||{};
+  GROUP_KEYS.forEach(k=>{
+    const actual=ar[k]||[]; const pick=(p.groups&&p.groups[k])||[];
+    for(let pos=0;pos<4;pos++){ if(pick[pos]&&actual[pos]&&pick[pos]===actual[pos]){groupPts++;correctGroups++;} }
+  });
+  // Round 2: bracket
+  const abr=results.bracket||{};
+  BR_ROUNDS.forEach(r=>{
+    if(r.pts<=0) return;
+    const actual=new Set((abr[r.key]||[]).filter(Boolean));
+    const pick=(p.bracket&&p.bracket[r.key])||[];
+    const counted=new Set();
+    pick.forEach(t=>{ if(t&&actual.has(t)&&!counted.has(t)){counted.add(t);bracketPts+=r.pts;} });
+  });
+  return {groupPts,bracketPts,total:groupPts+bracketPts,correctGroups};
+}
+
+// ══ RENDER: participants / picks / leaderboard ═════════
+function renderParticipants(){
+  const el=document.getElementById('participants-list');
+  document.getElementById('p-count').textContent=participants.length;
+  if(!participants.length){el.innerHTML='<div class="empty-state">No entries yet — be the first!</div>';return;}
+  el.innerHTML=participants.map(p=>{
+    const gFilled=GROUP_KEYS.reduce((n,k)=>n+((p.groups&&p.groups[k])?p.groups[k].filter(Boolean).length:0),0);
+    const bFilled=BR_ROUNDS.reduce((n,r)=>n+((p.bracket&&p.bracket[r.key])?p.bracket[r.key].filter(Boolean).length:0),0);
+    const revealBracket=isAdmin||bracketLocked();
+    let bracketInfo;
+    if(revealBracket){
+      const champ=(p.bracket&&p.bracket.f&&p.bracket.f[0])||'—';
+      const tb=(p.tiebreak==null)?'':` · ⚖️ ${p.tiebreak}`;
+      bracketInfo=`Bracket: ${bFilled} slots · 🏆 ${esc(champ)}${tb}`;
+    } else {
+      // hide champion + tiebreaker until Round 2 locks
+      const submitted=bFilled>0||p.tiebreak!=null;
+      bracketInfo=`Bracket: ${submitted?'🔒 submitted (hidden until Round 2 locks)':'not started'}`;
+    }
+    return `<div class="participant-row">
+      <div style="flex:1">
+        <div class="p-name">${esc(p.name)}</div>
+        <div class="p-meta">Groups: ${gFilled}/48 set · ${bracketInfo}</div>
+      </div>
+      <div class="entry-actions"><button class="btn btn-secondary" onclick="startEdit('${p.id}')">✏️ Edit</button></div>
+    </div>`;
+  }).join('');
+}
+
+// chip color vs actual results: 'correct' if team actually reached that round,
+// 'wrong' if that round has results entered and team isn't in them, '' if not decided yet
+// Per-match coloring. `team` is the player's pick for match index `idx` of `roundKey`.
+// Green  = this match has a result and the player's pick won it.
+// Red    = either this match has a result and a different team won it,
+//          OR the picked team was already eliminated in an earlier round (dead pick).
+// Neutral= this match hasn't been decided yet and the team is still alive.
+function bracketChipClass(team,roundKey,idx){
+  if(!team) return 'chip';
+  const abr=results.bracket||{};
+  const order=['r32','r16','qf','sf','f'];
+  const ri=order.indexOf(roundKey);
+
+  // 1) Was this team eliminated in an EARLIER round? -> dead pick, red.
+  // A team is eliminated only if the SPECIFIC match it contested has a decided
+  // winner that isn't this team. Partial/unentered matches must NOT count.
+  for(let prev=0;prev<ri;prev++){
+    const pk=order[prev];
+    const elim=teamEliminatedIn(team,pk);
+    if(elim) return 'chip wrong';
+  }
+
+  // 2) Does THIS match have a result?
+  const actualWinner=(abr[roundKey]||[])[idx];
+  if(actualWinner){
+    return actualWinner===team ? 'chip correct' : 'chip wrong';
+  }
+
+  // 3) No result for this match yet, team still alive -> neutral.
+  return 'chip';
+}
+
+// Returns true if `team` actually contested round `roundKey` and that specific match
+// was decided in favour of someone else (i.e. the team was knocked out there).
+function teamEliminatedIn(team,roundKey){
+  const abr=results.bracket||{};
+  const competitors=roundContestants(roundKey);            // teams entering this round
+  if(!competitors.includes(team)) return false;            // didn't contest this round
+  // find the match index this team was in. Competitors are paired [2i,2i+1] per match i.
+  const ci=competitors.indexOf(team);
+  const matchIdx=Math.floor(ci/2);
+  const winner=(abr[roundKey]||[])[matchIdx];
+  if(!winner) return false;                                // that match not decided yet
+  return winner!==team;                                    // decided and team lost
+}
+
+// The set of teams that actually contested a given round (the competitors entering it),
+// in match order: [m0 home, m0 away, m1 home, m1 away, ...].
+// For r32 that's the 32 qualifiers; for later rounds it's the previous round's actual winners.
+function roundContestants(roundKey){
+  const abr=results.bracket||{};
+  if(roundKey==='r32') return (results.qualifiers||[]);
+  const order=['r32','r16','qf','sf','f'];
+  const prevKey=order[order.indexOf(roundKey)-1];
+  return (abr[prevKey]||[]);
+}
+function groupCellClass(team,k,pos){
+  const ar=results.groups||{};
+  const actual=ar[k]||[];
+  if(!team||actual.filter(Boolean).length===0||!actual[pos]) return '';
+  return actual[pos]===team?'correct':'wrong';
+}
+function champChipClass(champ){
+  const abr=results.bracket||{};
+  const actualChamp=(abr.f&&abr.f[0])||null;
+  if(!actualChamp) return 'champ-chip';
+  return actualChamp===champ?'champ-chip correct':'champ-chip wrong';
+}
+
+function renderAllPicks(){
+  const el=document.getElementById('all-picks-grid'); if(!el) return;
+  const revealGroups=isAdmin||groupsLocked();
+  const revealBracket=isAdmin||bracketLocked();
+  if(!participants.length){el.innerHTML='<div class="empty-state">No picks yet.</div>';return;}
+  if(!revealGroups){el.innerHTML='<div class="empty-state">Everyone\'s picks are hidden until Round 1 locks. 🤫</div>';return;}
+
+  const anyResults=(results.groups&&Object.keys(results.groups).length)||(results.bracket&&Object.keys(results.bracket).length);
+  const legend=anyResults?`<div class="picks-legend">
+    <span><span class="leg-dot g"></span> Correct</span>
+    <span><span class="leg-dot r"></span> Wrong / eliminated</span>
+    <span><span class="leg-dot n"></span> Not yet decided</span>
+  </div>`:'';
+
+  el.innerHTML=legend+participants.map((p,idx)=>{
+    const champ=(p.bracket&&p.bracket.f&&p.bracket.f[0])||'—';
+    const tb=(p.tiebreak==null)?null:p.tiebreak;
+
+    // group detail (all 12 groups, colored if results entered)
+    const groupRows=GROUP_KEYS.map(k=>{
+      const picks=(p.groups&&p.groups[k])||[];
+      const teams=picks.map((t,pos)=>{
+        const cls=groupCellClass(t,k,pos);
+        const styled=cls==='correct'?'color:#155f37;font-weight:500':cls==='wrong'?'color:#a02012':'';
+        return `<span style="${styled}">${pos+1}. ${esc(t||'—')}</span>`;
+      }).join(' · ');
+      return `<div class="grp-row"><span class="grp-name">Grp ${k}</span><span style="font-size:0.8rem">${teams}</span></div>`;
+    }).join('');
+
+    // bracket detail (only if revealed)
+    let bracketToggle='', bracketDetail='';
+    if(revealBracket){
+      const bracketRows=BR_ROUNDS.map(r=>{
+        const picks=(p.bracket&&p.bracket[r.key])||[];
+        if(!picks.filter(Boolean).length) return '';
+        const chips=picks.map((t,i)=>t?`<span class="${bracketChipClass(t,r.key,i)}">${esc(t)}</span>`:'').filter(Boolean).join('');
+        return `<div class="rnd-label">${r.label}<span class="pts">${r.pts} pt</span></div>
+          <div class="chips">${chips}</div>`;
+      }).join('');
+      bracketToggle=`<button onclick="togglePick(${idx},'bracket')" id="bbtn-${idx}">Full bracket ▾</button>`;
+      bracketDetail=`<div class="pick-detail" id="bracket-${idx}">${bracketRows||'<div style="font-size:0.8rem;color:#aaa;font-style:italic">No bracket submitted.</div>'}</div>`;
+    }
+
+    // header chips
+    let headerChips='';
+    if(revealBracket){
+      headerChips=`<div class="pc-chips">
+        ${champ!=='—'?`<span class="${champChipClass(champ)}">🏆 ${esc(champ)}</span>`:''}
+        ${tb!=null?`<span class="tb-chip">⚖️ ${tb} goals</span>`:''}
+      </div>`;
+    } else {
+      const submitted=(p.bracket&&p.bracket.f&&p.bracket.f[0])||tb!=null;
+      headerChips=`<div class="pc-meta" style="margin-top:6px;color:#aaa;font-style:italic">🔒 Bracket ${submitted?'submitted':'pending'} — revealed when Round 2 locks</div>`;
+    }
+
+    return `<div class="pick-card">
+      <div class="pc-name">${esc(p.name)}</div>
+      ${headerChips}
+      <div class="toggle-row">
+        <button onclick="togglePick(${idx},'groups')" id="gbtn-${idx}">Group picks ▾</button>
+        ${bracketToggle}
+      </div>
+      <div class="pick-detail" id="groups-${idx}">${groupRows}</div>
+      ${bracketDetail}
+    </div>`;
+  }).join('');
+}
+
+function togglePick(i,which){
+  const other=which==='groups'?'bracket':'groups';
+  const d=document.getElementById(which+'-'+i);
+  const b=document.getElementById((which==='groups'?'g':'b')+'btn-'+i);
+  if(!d||!b) return;
+  // close the other section if it exists
+  const od=document.getElementById(other+'-'+i);
+  const ob=document.getElementById((other==='groups'?'g':'b')+'btn-'+i);
+  if(od){od.classList.remove('open');}
+  if(ob){ob.classList.remove('active');ob.textContent=(other==='groups'?'Group picks ▾':'Full bracket ▾');}
+  const open=d.classList.toggle('open');
+  b.classList.toggle('active',open);
+  b.textContent=(which==='groups'?'Group picks ':'Full bracket ')+(open?'▴':'▾');
+}
+
+function renderLeaderboard(){
+  const el=document.getElementById('lb-content'); if(!el) return;
+  if(!participants.length){el.innerHTML='<div class="empty-state" style="color:#aaa">Submit picks to see standings.</div>';return;}
+  const actualGoals=(results.knockoutGoals===undefined||results.knockoutGoals===null||results.knockoutGoals==='')?null:Number(results.knockoutGoals);
+  const ranked=participants.map(p=>({...p,s:scoreParticipant(p)}))
+    .sort((a,b)=>{
+      if(b.s.total!==a.s.total) return b.s.total-a.s.total;
+      // tiebreaker: closest to actual knockout goals (only if admin has entered the actual)
+      if(actualGoals!=null){
+        const da=(a.tiebreak==null)?Infinity:Math.abs(a.tiebreak-actualGoals);
+        const db=(b.tiebreak==null)?Infinity:Math.abs(b.tiebreak-actualGoals);
+        if(da!==db) return da-db;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  const showTb=actualGoals!=null;
+  const revealTb=isAdmin||bracketLocked(); // hide raw guesses until Round 2 locks
+  el.innerHTML=`
+    ${showTb?`<p style="font-size:0.78rem;color:#888;font-style:italic;margin-bottom:10px">Tiebreaker — actual knockout goals: <b>${actualGoals}</b>. Ties broken by closest guess.</p>`:''}
+    <div class="lb-scroll-hint">⬅ swipe to see all columns ➡</div>
+    <div class="lb-table-wrap"><table class="lb-table"><thead><tr><th>Entry</th><th>Total</th><th>Round 1</th><th>Round 2</th><th>TB</th></tr></thead><tbody>${
+    ranked.map((p,i)=>{
+      let tbCell;
+      if(!revealTb){
+        // bracket round still open — don't reveal the guesses
+        tbCell=(p.tiebreak!=null)?'🔒':'—';
+      } else {
+        const tbVal=(p.tiebreak==null)?'—':p.tiebreak;
+        const tbDiff=(showTb&&p.tiebreak!=null)?` <span style="color:#bbb;font-size:0.72rem">(${p.tiebreak-actualGoals>=0?'+':''}${p.tiebreak-actualGoals})</span>`:'';
+        tbCell=`${tbVal}${tbDiff}`;
+      }
+      return `<tr class="${i===0&&p.s.total>0?'rank-1':''}">
+      <td><span class="rank-badge ${i===0&&p.s.total>0?'gold':''}" style="margin-right:6px">${i+1}</span><span style="font-family:'Playfair Display',serif">${esc(p.name)}</span></td>
+      <td><span class="score-pill">${p.s.total}</span></td>
+      <td class="pts-break">${p.s.groupPts}</td>
+      <td class="pts-break">${p.s.bracketPts}</td>
+      <td class="pts-break">${tbCell}</td>
+    </tr>`;
+    }).join('')
+  }</tbody></table></div>`;
+}
+
+// ══ ADMIN: results editors + phase + remove ════════════
+function renderAdminEditors(){
+  if(!isAdmin) return;
+  const ag=document.getElementById('admin-groups');
+  if(ag){
+    const ar=results.groups||{};
+    ag.innerHTML='<div class="groups-wrap">'+GROUP_KEYS.map(k=>{
+      const cur=ar[k]||["","","",""];
+      let h=`<div class="group-block"><div class="group-title">Group ${k}</div><div class="group-grid">`;
+      for(let pos=0;pos<4;pos++){
+        h+=`<div class="rank-row"><span class="rank-pos ${pos<2?'adv':''}">${pos+1}</span>
+          <select onchange="setActualGroup('${k}',${pos},this.value)">
+            <option value="">—</option>
+            ${GROUPS[k].map(t=>`<option value="${t}" ${cur[pos]===t?'selected':''}>${t}</option>`).join('')}
+          </select></div>`;
+      }
+      return h+'</div></div>';
+    }).join('')+'</div>';
+  }
+  const ab=document.getElementById('admin-bracket');
+  if(ab){
+    const abr=results.bracket||{};
+    const q=(results.qualifiers||Array(32).fill(""));
+    let h='';
+    // ── Step 1: seed the 32 qualifiers into the R32 ties ──
+    h+='<h3>Step 1 — Seed the 32 qualifiers</h3>';
+    h+='<div class="info-box">Set the two teams in each Round of 32 tie. Use <b>Auto-fill group winners &amp; runners-up</b> to pull W/RU from the saved group results, then assign the 8 best third-place teams to their slots manually.</div>';
+    h+='<button class="btn btn-secondary" style="margin-bottom:10px" onclick="autofillQualifiers()">↻ Auto-fill group winners &amp; runners-up</button>';
+    h+='<div class="tie-pair">';
+    R32_TIES.forEach((tie,i)=>{
+      h+=`<div class="br-tie"><div class="br-tie-num">M${tie.m}</div><div class="br-tie-teams" style="flex-direction:column;gap:4px">
+        <select onchange="setQualifier(${i*2},this.value)"><option value="">— ${tie.slots[0]} —</option>${ALL_TEAMS.map(t=>`<option value="${t}" ${q[i*2]===t?'selected':''}>${t}</option>`).join('')}</select>
+        <select onchange="setQualifier(${i*2+1},this.value)"><option value="">— ${tie.slots[1]} —</option>${ALL_TEAMS.map(t=>`<option value="${t}" ${q[i*2+1]===t?'selected':''}>${t}</option>`).join('')}</select>
+      </div></div>`;
+    });
+    h+='</div>';
+    // ── Step 2: enter actual winner of each match ──
+    h+='<h3 style="margin-top:18px">Step 2 — Enter actual results</h3>';
+    h+='<div class="info-box">As each round is played, set who actually won each match. This scores everyone\'s bracket: '+BR_ROUNDS.map(r=>r.label+' = '+r.pts+'pt').join(', ')+'.</div>';
+    BR_ROUNDS.forEach(r=>{
+      const cur=abr[r.key]||Array(r.matches).fill("");
+      h+=`<div class="br-round"><h3>${r.label} <span class="br-pts">${r.pts} pt each</span></h3>`;
+      for(let i=0;i<r.matches;i++){
+        const opts=adminMatchOptions(r.key,i);
+        const mlabel=r.key==='r32'?('M'+R32_TIES[i].m):('#'+(i+1));
+        h+=`<div class="br-match"><span class="m-num">${mlabel}</span>
+          <select onchange="setActualBracket('${r.key}',${i},this.value)">
+            <option value="">— winner —</option>
+            ${opts.map(t=>`<option value="${t}" ${cur[i]===t?'selected':''}>${t}</option>`).join('')}
+          </select></div>`;
+      }
+      h+='</div>';
+    });
+    ab.innerHTML=h;
+  }
+  const akg=document.getElementById('admin-knockout-goals');
+  if(akg && results.knockoutGoals!=null && results.knockoutGoals!=='') akg.value=results.knockoutGoals;
+}
+// options for the admin winner dropdown: the two teams actually in that match
+function adminMatchOptions(rKey,i){
+  const abr=results.bracket||{};
+  if(rKey==='r32'){
+    const q=results.qualifiers||[];
+    return [q[i*2],q[i*2+1]].filter(Boolean);
+  }
+  const order=['r32','r16','qf','sf','f'];
+  const prev=abr[order[order.indexOf(rKey)-1]]||[];
+  return [prev[i*2],prev[i*2+1]].filter(Boolean);
+}
+function autofillQualifiers(){
+  const ar=results.groups||{};
+  if(!results.qualifiers) results.qualifiers=Array(32).fill("");
+  R32_TIES.forEach((tie,i)=>{
+    tie.slots.forEach((slot,si)=>{
+      const idx=i*2+si;
+      const m=slot.match(/^(W|RU) ([A-L])$/);
+      if(m){
+        const g=ar[m[2]]||[];
+        const team=m[1]==='W'?g[0]:g[1];
+        if(team) results.qualifiers[idx]=team;
+      }
+      // 3rd-place slots left for manual assignment
+    });
+  });
+  showToast('Filled W/RU from group results. Assign 3rd-place teams manually.');
+  renderAdminEditors();
+}
+function setQualifier(idx,team){
+  if(!results.qualifiers)results.qualifiers=Array(32).fill("");
+  results.qualifiers[idx]=team;
+  renderAdminEditors();
+}
+function setActualGroup(k,pos,team){
+  if(!results.groups)results.groups={};
+  if(!results.groups[k])results.groups[k]=["","","",""];
+  if(team) results.groups[k]=results.groups[k].map((t,i)=>i!==pos&&t===team?"":t);
+  results.groups[k][pos]=team;
+}
+function setActualBracket(key,idx,team){
+  if(!results.bracket)results.bracket={};
+  if(!results.bracket[key])results.bracket[key]=Array(BR_ROUNDS.find(r=>r.key===key).matches).fill("");
+  results.bracket[key][idx]=team;
+  renderAdminEditors();
+}
+async function saveResults(){
+  const{error}=await sb.from('wc_state').upsert([{key:'results',value:JSON.stringify(results)}],{onConflict:'key'});
+  if(error){showToast('Error saving results.');console.error(error);return;}
+  showToast('Results saved ✓');renderLeaderboard();
+}
+async function adminSetPhase(){
+  settings.phase=document.getElementById('admin-phase').value;
+  const{error}=await sb.from('wc_state').upsert([{key:'settings',value:JSON.stringify(settings)}],{onConflict:'key'});
+  if(error){showToast('Error saving phase.');console.error(error);return;}
+  showToast('Phase updated ✓');applyPhaseState();
+}
+function renderAdminRemove(){
+  const el=document.getElementById('admin-remove-list'); if(!el) return;
+  if(!participants.length){el.innerHTML='<div class="empty-state">No entries yet.</div>';return;}
+  el.innerHTML=participants.map(p=>`<div class="participant-row">
+    <div style="flex:1">
+      <div class="p-name">${esc(p.name)}</div>
+      <div class="p-meta">PIN: <span style="font-family:'Libre Baskerville',serif;letter-spacing:0.15em;color:#555">${esc(p.pin)}</span></div>
+    </div>
+    <div class="entry-actions">
+      <button class="btn btn-secondary" onclick="adminEdit('${p.id}')">✏️ Edit</button>
+      <button class="btn btn-danger" onclick="removeParticipant('${p.id}','${esc(p.name).replace(/'/g,"\\'")}')">Remove</button>
+    </div></div>`).join('');
+}
+async function removeParticipant(id,name){
+  if(!confirm(`Remove ${name} from the pool?`)) return;
+  const{error}=await sb.from('wc_participants').delete().eq('id',id);
+  if(error){showToast('Error removing entry.');return;}
+  showToast(`${name} removed.`);await loadParticipants();
+}
+
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function showSetupError(msg){const e=document.getElementById('setup-error');e.textContent=msg;e.style.display='block';}
+let toastTimer;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800);}
+</script>
+</body>
+</html>
+</body>
+</html>
